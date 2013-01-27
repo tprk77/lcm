@@ -6,8 +6,6 @@
 #include "lua_ref_helper.h"
 #include "lua_ver_helper.h"
 
-#include "debug_support.h"
-
 /** @file */
 
 /*
