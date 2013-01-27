@@ -8,6 +8,10 @@ if HAVE_PYTHON
 SUBDIRS += lcm-python
 endif
 
+if HAVE_LUA
+SUBDIRS += lcm-lua
+endif
+
 if WITH_EXAMPLES
 SUBDIRS += examples
 endif
