@@ -10,7 +10,7 @@
 #ifdef WIN32
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
-#include <WinPorting.h>
+#include <lcm/windows/WinPorting.h>
 #include <windows.h>
 #else
 #include <inttypes.h>
@@ -147,9 +147,9 @@ _primitive_type_size (const char *tn)
 }
 
 static char *
-escape_typename_to_variablename(const char * typename){
+escape_typename_to_variablename(const char * tn){
 
-	char const * varname = g_strdup(typename);
+	char const * varname = g_strdup(tn);
 	char * nameptr = (char *) varname;
 
 	while(*nameptr != '\0'){
@@ -851,10 +851,11 @@ emit_package (lcmgen_t *lcm, _package_contents_t *pc)
             		// XXX get all of the previous types and packages
 
             		// this regex works because the first part is greedy
-            		GRegex * regex = g_regex_new("require\\('([\\w+\\.]*\\.)(\\w+)'\\)( -- subpackage)?", 0, 0, NULL);
+            		GRegex * regex = g_regex_new("require\\('([\\w+\\.]*\\.)(\\w+)'\\)( -- subpackage)?",
+						(GRegexCompileFlags) 0, (GRegexMatchFlags) 0, NULL);
             		GMatchInfo * matchinfo;
 
-            		if(g_regex_match(regex, buf, 0, &matchinfo)){
+            		if(g_regex_match(regex, buf, (GRegexMatchFlags) 0, &matchinfo)){
             			if(g_match_info_get_match_count(matchinfo) == 3){
             				// not a subpackage
             				gchar * classname = g_match_info_fetch(matchinfo, 2);
@@ -921,7 +922,7 @@ emit_package (lcmgen_t *lcm, _package_contents_t *pc)
             GList * package_types = g_hash_table_get_values(initlua_requires);
 
             for (int j = 0; j < g_list_length(package_types); j++) {
-            	char * tn = g_list_nth_data(package_types, j);
+            	char * tn = (char *) g_list_nth_data(package_types, j);
             	char * fn = g_strjoin(".", package_name, tn, NULL);
             	fprintf(init_lua_fp, "M.%s = require('%s')\n", tn, fn);
             	g_free(fn);
@@ -933,7 +934,7 @@ emit_package (lcmgen_t *lcm, _package_contents_t *pc)
             GList * subpacks = g_hash_table_get_values(initlua_requires_subpack);
 
             for (int j = 0; j < g_list_length(subpacks); j++) {
-            	char * spn = g_list_nth_data(subpacks, j);
+            	char * spn = (char *) g_list_nth_data(subpacks, j);
             	// get the base of the package name
             	char ** tmpsplit = g_strsplit(spn, ".", -1);
             	char * sn = tmpsplit[g_strv_length(tmpsplit) - 1];
@@ -1004,14 +1005,14 @@ emit_package (lcmgen_t *lcm, _package_contents_t *pc)
         			// only look for immediate submodules, not submodules of the submodules
         			gchar * regexstr = g_strjoin("", "^", regexpackage, "\\.(\\w+)", NULL);
 
-        			GRegex * regex = g_regex_new(regexstr, 0, 0, NULL);
+        			GRegex * regex = g_regex_new(regexstr, (GRegexCompileFlags) 0, (GRegexMatchFlags) 0, NULL);
         			GMatchInfo * matchinfo;
 
         			g_strfreev(tmpsplit);
         			g_free(regexpackage);
         			g_free(regexstr);
 
-        			if (g_regex_match(regex, lm->type->package, 0, &matchinfo)) {
+        			if (g_regex_match(regex, lm->type->package, (GRegexMatchFlags) 0, &matchinfo)) {
         				if (g_match_info_get_match_count(matchinfo) == 2) {
         					gchar * fullsubpackage = g_match_info_fetch(matchinfo, 0);
         					gchar * subpackage = g_match_info_fetch(matchinfo, 1);
