@@ -1,6 +1,12 @@
 
-#define LUA_LIB
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "lua.h"
+#ifdef __cplusplus
+}
+#endif
 
 #include "lualcm_lcm.h"
 #include "lualcm_hash.h"

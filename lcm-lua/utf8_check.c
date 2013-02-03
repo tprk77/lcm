@@ -30,7 +30,7 @@
 
 #include <stdlib.h>
 
-int utf8_check(const unsigned char * s, size_t length)
+int utf8_check(const char * s, size_t length)
 {
 	size_t i = 0;
 	while (i < length) {

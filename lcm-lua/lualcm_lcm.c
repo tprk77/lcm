@@ -1,10 +1,14 @@
 
 #include "lualcm_lcm.h"
-#include "lauxlib.h"
 #include "lcm/lcm.h"
-#include "sys/select.h"
 #include "lua_ref_helper.h"
 #include "lua_ver_helper.h"
+
+#ifndef WIN32
+#include "sys/select.h"
+#else
+#include "Winsock2.h"
+#endif
 
 /** @file */
 

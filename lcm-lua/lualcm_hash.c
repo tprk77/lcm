@@ -1,7 +1,6 @@
 
 
 #include "lualcm_hash.h"
-#include "lauxlib.h"
 #include "stdio.h"
 #include "lua_ver_helper.h"
 
@@ -132,7 +131,8 @@ static int impl_hash_new(lua_State * L){
 	const char * hash_str = luaL_checkstring(L, 1);
 
 	/* use sscanf to parse the string */
-	uint64_t hash = 0;
+	/* should use uint64_t here, but it causes a warning  with sscanf */
+	unsigned long long hash = 0;
 	int matches = sscanf(hash_str, "%llx", &hash);
 	if(matches != 1){
 		lua_pushstring(L, "error creating hash");
@@ -277,9 +277,13 @@ static int impl_hash_tostring(lua_State * L){
 
 	/* convert uint64_t to string */
 	/* use snprintf because lua_pushfstring can't handle %llx */
+	/* have to cast uint64_t to avoid warning with snprintf */
 	char hash_str[20];
-	snprintf(hash_str, 20, "0x%llx", hashu->hash);
-
+#ifndef WIN32
+	snprintf(hash_str, 20, "0x%llx", (unsigned long long) hashu->hash);
+#else
+	_snprintf(hash_str, 20, "0x%llx", (unsigned long long) hashu->hash);
+#endif
 	/* make the string */
 	lua_pushfstring(L, "lcm._hash = %s (@ %p)", hash_str, hashu);
 

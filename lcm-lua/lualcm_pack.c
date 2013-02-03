@@ -1,13 +1,15 @@
 
 #include "lualcm_pack.h"
-#include "lauxlib.h"
 #include "errno.h"
 #include "stdint.h"
-#include "stdbool.h"
 #include "stdlib.h"
 #include "string.h"
 #include "lualcm_hash.h"
 #include "lua_ver_helper.h"
+
+#ifndef __cplusplus
+#include "stdbool.h"
+#endif
 
 /*
  * WARNING! This code assumes you have a normal lua build, where lua_Number
@@ -59,11 +61,11 @@ typedef struct impl_pack_op_list {
 } impl_pack_op_list_t;
 
 /* supporting functions */
-static bool impl_format_to_ops(impl_pack_op_t *, size_t, size_t *, bool *, const char *);
+static bool impl_format_to_ops(impl_pack_op_t *, size_t, size_t *, bool *, const char *, const char **);
 static size_t impl_get_required_buffer_size(impl_pack_op_t *, size_t);
 static int impl_get_required_stack_size(impl_pack_op_t *, size_t);
-static void impl_unpack_buffer(lua_State *, impl_pack_op_t *, size_t, bool, const uint8_t *, size_t);
-static void impl_pack_buffer(lua_State *, impl_pack_op_t *, size_t, bool, uint8_t *, size_t, size_t *);
+static bool impl_unpack_buffer(lua_State *, impl_pack_op_t *, size_t, bool, const uint8_t *, size_t, const char **);
+static bool impl_pack_buffer(lua_State *, impl_pack_op_t *, size_t, bool, uint8_t *, size_t, size_t *, const char **);
 static bool impl_is_machine_little_endian(void);
 static void impl_swap_bytes(uint8_t *, size_t);
 
@@ -94,7 +96,7 @@ static void impl_pack_byte(lua_State *, uint8_t *, size_t *, int *, size_t, bool
 static void impl_pack_hash(lua_State *, uint8_t *, size_t *, int *, size_t, bool);
 
 /* forward declaration, from utf8_check.c */
-int utf8_check(const unsigned char * s, size_t length);
+int utf8_check(const char * s, size_t length);
 
 void ll_pack_register(lua_State * L){
 
@@ -115,13 +117,22 @@ int impl_unpack(lua_State * L){
 	/* get the format */
 	const char * format = luaL_checkstring(L, 1);
 
-	/* turn format into ops */
+	/* some variables used for reading the format */
 	bool is_little_endian;
 	size_t num_ops;
 	impl_pack_op_t ops[20];
-	if(!impl_format_to_ops(ops, 20, &num_ops, &is_little_endian, format)){
-		lua_pushstring(L, "error while reading format");
-		lua_error(L);
+
+	/* variables used to check results */
+	bool success;
+	const char * error_message;
+
+	/* turn format into ops */
+	success = impl_format_to_ops(ops, 20, &num_ops,
+			&is_little_endian, format, &error_message);
+
+	/* check the result */
+	if(!success){
+		luaL_error(L, "error reading format: %s", error_message);
 	}
 
 	/* get number of values */
@@ -134,10 +145,16 @@ int impl_unpack(lua_State * L){
 
 	/* get the buffer */
 	size_t buf_size;
-	const uint8_t * buf = luaL_checklstring(L, 2, &buf_size);
+	const uint8_t * buf = (const uint8_t *) luaL_checklstring(L, 2, &buf_size);
 
 	/* use ops to unpack */
-	impl_unpack_buffer(L, ops, num_ops, is_little_endian, buf, buf_size);
+	success = impl_unpack_buffer(L, ops, num_ops,
+			is_little_endian, buf, buf_size, &error_message);
+
+	/* check the result */
+	if(!success){
+		luaL_error(L, "error unpacking buffer: %s", error_message);
+	}
 
 	return num_values;
 }
@@ -147,25 +164,40 @@ int impl_pack(lua_State * L){
 	/* get the format */
 	const char * format = luaL_checkstring(L, 1);
 
-	/* turn format into ops */
+	/* some variables used for reading the format */
 	bool is_little_endian;
 	size_t num_ops;
 	impl_pack_op_t ops[20];
-	if(!impl_format_to_ops(ops, 20, &num_ops, &is_little_endian, format)){
-		lua_pushstring(L, "error while reading format");
-		lua_error(L);
+
+	/* variables used to check results */
+	bool success;
+	const char * error_message;
+
+	/* turn format into ops */
+	success = impl_format_to_ops(ops, 20, &num_ops,
+			&is_little_endian, format, &error_message);
+
+	/* check the result */
+	if(!success){
+		luaL_error(L, "error reading format: %s", error_message);
 	}
 
 	/* make buffer */
 	const size_t buf_size = impl_get_required_buffer_size(ops, num_ops);
-	uint8_t buf[buf_size];
+	uint8_t * buf = (uint8_t *) malloc(buf_size);
 
 	/* remove format string from the stack, pack requires this */
 	lua_remove(L, 1);
 
 	/* use ops to pack */
 	size_t actual_buf_size;
-	impl_pack_buffer(L, ops, num_ops, is_little_endian, buf, buf_size, &actual_buf_size);
+	success = impl_pack_buffer(L, ops, num_ops, is_little_endian, buf, buf_size, &actual_buf_size, &error_message);
+
+	/* check the result */
+	if(!success){
+		free(buf);
+		luaL_error(L, "error packing buffer: %s", error_message);
+	}
 
 	/* at this point, buf_size and actual_buf_size should/will be the same */
 	/* we only need to use actual_buf_size if we didn't know how big the buffer was going to be */
@@ -173,7 +205,8 @@ int impl_pack(lua_State * L){
 	/* printf("buf_size: %d, actual_buf_size: %d\n", buf_size, actual_buf_size); */
 
 	/* push the buffer */
-	lua_pushlstring(L, buf, actual_buf_size);
+	lua_pushlstring(L, (const char *) buf, actual_buf_size);
+	free(buf);
 
 	return 1;
 }
@@ -188,8 +221,7 @@ int impl_prepare_string(lua_State * L){
 
 	/* check UTF-8 */
 	if(!utf8_check(string, length)){
-		lua_pushstring(L, "string is not UTF-8");
-		lua_error(L);
+		luaL_error(L, "string is not UTF-8");
 	}
 
 	/* push the string (null terminated) */
@@ -217,14 +249,13 @@ int impl_utf8_check(lua_State * L){
 
 	/* check UTF-8 */
 	if(!utf8_check(string, length)){
-		lua_pushstring(L, "string is not UTF-8");
-		lua_error(L);
+		luaL_error(L, "string is not UTF-8");
 	}
 
 	return 1;
 }
 
-static bool impl_format_to_ops(impl_pack_op_t * ops, size_t max_num_ops, size_t * num_ops, bool * little_endian, const char * format){
+static bool impl_format_to_ops(impl_pack_op_t * ops, size_t max_num_ops, size_t * num_ops, bool * is_little_endian, const char * format, const char ** error_message){
 
 	*num_ops = 0;
 	bool repeat_set = false;
@@ -234,21 +265,22 @@ static bool impl_format_to_ops(impl_pack_op_t * ops, size_t max_num_ops, size_t 
 	if(c == '@' || c == '=' || c == '<' || c == '>' || c == '!'){
 		switch(c){
 		case '@': return false; /* not supported */ break;
-		case '=': *little_endian = impl_is_machine_little_endian(); break;
-		case '<': *little_endian = true; break;
-		case '>': *little_endian = false; break;
-		case '!': *little_endian = false; break;
+		case '=': *is_little_endian = impl_is_machine_little_endian(); break;
+		case '<': *is_little_endian = true; break;
+		case '>': *is_little_endian = false; break;
+		case '!': *is_little_endian = false; break;
 		}
 		c = *(++format);
 	}else{
 		/* default to native endianness */
-		*little_endian = impl_is_machine_little_endian();
+		*is_little_endian = impl_is_machine_little_endian();
 	}
 
 	while(c != '\0'){
 
 		if(*num_ops >= max_num_ops){
 			/* too many ops error */
+			*error_message = "too many operators in format string";
 			return false;
 		}
 
@@ -289,6 +321,7 @@ static bool impl_format_to_ops(impl_pack_op_t * ops, size_t max_num_ops, size_t 
 
 			if(errno != 0){
 				/* conversion error */
+				*error_message = "cannot parse number in format string";
 				return false;
 			}
 
@@ -296,6 +329,7 @@ static bool impl_format_to_ops(impl_pack_op_t * ops, size_t max_num_ops, size_t 
 
 		}else{
 			/* format error */
+			*error_message = "unexpected character in format string";
 			return false;
 		}
 	}
@@ -351,14 +385,14 @@ static int impl_get_required_stack_size(impl_pack_op_t * ops, size_t num_ops){
 	return num_values;
 }
 
-static void impl_unpack_buffer(lua_State * L, impl_pack_op_t * ops, size_t num_ops, bool is_little_endian, const uint8_t * buf, size_t buf_size){
+static bool impl_unpack_buffer(lua_State * L, impl_pack_op_t * ops, size_t num_ops, bool is_little_endian, const uint8_t * buf, size_t buf_size, const char ** error_message){
 
 	const size_t req_buf_size = impl_get_required_buffer_size(ops, num_ops);
 
 	/* make sure we won't run out of buffer */
 	if(req_buf_size > buf_size){
-		lua_pushstring(L, "buffer is too small");
-		lua_error(L);
+		*error_message = "buffer is too small";
+		return false;
 	}
 
 	bool swap = false;
@@ -384,23 +418,25 @@ static void impl_unpack_buffer(lua_State * L, impl_pack_op_t * ops, size_t num_o
 		case DATATYPE_HASH: impl_unpack_hash(L, buf, &offset, ops[i].repeat, swap); break;
 		}
 	}
+
+	return true;
 }
 
-static void impl_pack_buffer(lua_State * L, impl_pack_op_t * ops, size_t num_ops, bool is_little_endian, uint8_t * buf, size_t max_buf_size, size_t * buf_size){
+static bool impl_pack_buffer(lua_State * L, impl_pack_op_t * ops, size_t num_ops, bool is_little_endian, uint8_t * buf, size_t max_buf_size, size_t * buf_size, const char ** error_message){
 
 	const size_t req_buf_size = impl_get_required_buffer_size(ops, num_ops);
 	const int req_stack_size = impl_get_required_stack_size(ops, num_ops);
 
 	/* this check ensures the offset will never exceed max_buf_size */
 	if(req_buf_size > max_buf_size){
-		lua_pushstring(L, "buffer is too small");
-		lua_error(L);
+		*error_message = "buffer is too small";
+		return false;
 	}
 
 	/* this assumes only arguments are on the stack */
 	if(req_stack_size > lua_gettop(L)){
-		lua_pushstring(L, "missing arguments");
-		lua_error(L);
+		*error_message = "missing arguments";
+		return false;
 	}
 
 	bool swap = false;
@@ -434,6 +470,8 @@ static void impl_pack_buffer(lua_State * L, impl_pack_op_t * ops, size_t num_ops
 	/* printf("offset: %d, req_sz: %d\n", offset, req_buf_size); */
 
 	*buf_size = offset; /* or req_buf_size */
+
+	return true;
 }
 
 static bool impl_is_machine_little_endian(void){

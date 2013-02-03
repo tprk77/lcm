@@ -5,8 +5,14 @@
  *      Author: tperkins
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "lua.h"
 #include "lauxlib.h"
+#ifdef __cplusplus
+}
+#endif
 
 static void tableDump(lua_State * L, int index){
 

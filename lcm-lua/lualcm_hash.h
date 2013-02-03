@@ -3,7 +3,15 @@
 #ifndef TPRK77_LUALCM_HASH_H
 #define TPRK77_LUALCM_HASH_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "lua.h"
+#include "lauxlib.h"
+#ifdef __cplusplus
+}
+#endif
+
 #include "stdint.h"
 
 /**

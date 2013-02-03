@@ -2,7 +2,15 @@
 #ifndef DEBUG_SUPPORT_H_
 #define DEBUG_SUPPORT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "lua.h"
+#include "lauxlib.h"
+#ifdef __cplusplus
+}
+#endif
+
 #include "stdio.h"
 
 inline void stackDump (lua_State *L) {
