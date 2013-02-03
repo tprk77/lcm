@@ -837,7 +837,7 @@ emit_package (lcmgen_t *lcm, _package_contents_t *pc)
             	if (!init_lua_fp) {
             		perror ("fopen");
             		free (initlua_fname);
-            		free(package_name);
+            		g_free(package_name);
             		return -1;
             	}
 
@@ -886,7 +886,7 @@ emit_package (lcmgen_t *lcm, _package_contents_t *pc)
             if (!init_lua_fp) {
             	perror ("fopen");
             	free (initlua_fname);
-            	free(package_name);
+            	g_free(package_name);
             	return -1;
             }
 
@@ -902,7 +902,7 @@ emit_package (lcmgen_t *lcm, _package_contents_t *pc)
             if(0 != fcntl(fileno(init_lua_fp), F_SETLKW, &lockinfo)) {
                 perror("locking init.lua");
                 free(initlua_fname);
-                free(package_name);
+                g_free(package_name);
                 fclose(init_lua_fp);
                 return -1;
             }
@@ -971,7 +971,7 @@ emit_package (lcmgen_t *lcm, _package_contents_t *pc)
             }
 
             free (initlua_fname);
-            free(package_name);
+            g_free(package_name);
         }
     }
     g_strfreev (dirs);
