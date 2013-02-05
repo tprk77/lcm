@@ -13,8 +13,8 @@ lcm_la_SOURCES = \
     lua_ref_helper.h \
     lua_ref_helper.c
 
-EXTRA_DIST = debug_support.h
-
 lcm_la_LDFLAGS = -module -avoid-version 
 lcm_la_LIBADD = ../lcm/liblcm.la $(LUA_LIB)
 lcm_la_CFLAGS = -I$(top_srcdir) $(LUA_INCLUDE)
+
+EXTRA_DIST = debug_support.h rock
