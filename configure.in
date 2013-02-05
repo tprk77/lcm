@@ -87,18 +87,17 @@ AC_SUBST(java_apiversion)
 dnl ---------------
 dnl Lua support
 dnl ---------------
-
 AC_ARG_WITH(lua,
             [AS_HELP_STRING([--without-lua],
                 [Do not compile lcm-lua bindings even if Lua is available])],
             [], [with_lua=yes])
 
 AS_IF([test "x$with_lua" != 'xno'],
-  [ AX_LUA_CHECK_INTERP([5.1], [], [lua_interp='yes'], [lua_interp='no'])
+  [ AX_PROG_LUA([5.1], [], [lua_interp='yes'], [lua_interp='no'])
     
     AS_IF([test "x$lua_interp" = 'xyes'],
-      [ AX_LUA_CHECK_HEADERS([lua_headers='yes'], [lua_headers='no'])
-        AX_LUA_CHECK_LIBS([lua_libs='yes'], [lua_libs='no'])
+      [ AX_LUA_HEADERS([lua_headers='yes'], [lua_headers='no'])
+        AX_LUA_LIBS([lua_libs='yes'], [lua_libs='no'])
       ])
 
     AS_IF([test "x$lua_interp" = 'xyes' &&
