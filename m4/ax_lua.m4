@@ -3,12 +3,12 @@
 # ===========================================================================
 #
 # SYNOPSIS
-# 
-#   AX_PROG_LUA([MINIMUM-VERSION], [TOO-BIG-VERSION],
-#               [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-#   AX_LUA_HEADERS([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-#   AX_LUA_LIBS([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-#   AX_LUA_READLINE([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
+#
+#   AX_PROG_LUA[([MINIMUM-VERSION], [TOO-BIG-VERSION],
+#                [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])]
+#   AX_LUA_HEADERS[([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])]
+#   AX_LUA_LIBS[([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])]
+#   AX_LUA_READLINE[([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])]
 #
 # DESCRIPTION
 #
@@ -26,7 +26,7 @@
 #   *** A note on compatibility with previous versions: This file has been
 #   mostly rewritten for serial 18. Most developers should be able to use
 #   these macros without needing to modify configure.ac. Care has been taken
-#   to preserve each macro's behaviour, but there are some differences:
+#   to preserve each macro's behavior, but there are some differences:
 #
 #   1) AX_WITH_LUA is deprecated; it now expands to the exact same thing as
 #   AX_PROG_LUA with no arguments.
@@ -40,12 +40,12 @@
 #   See the AX_PROG_LUA description for details.
 #
 #   Please read the macro descriptions for more information. ***
-#   
 #
 #
-#   AX_PROG_LUA([MINIMUM-VERSION], [TOO-BIG-VERSION],
-#               [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-#   -----------------------------------------------------
+#
+#   AX_PROG_LUA[([MINIMUM-VERSION], [TOO-BIG-VERSION],
+#                [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])]
+#   -------------------------------------------------------
 #
 #   Search for the Lua interpreter, and set up important Lua paths.
 #   Adds precious variable LUA, which may contain the path of the Lua
@@ -58,7 +58,7 @@
 #   number greater or equal to MINIMUM-VERSION and less than TOO-BIG-VERSION
 #   will be accepted.
 #
-#   Version comparisions require the AX_COMPARE_VERSION macro, which is
+#   Version comparisons require the AX_COMPARE_VERSION macro, which is
 #   provided by ax_compare_version.m4 from the Autoconf Archive.
 #
 #   The Lua version number, LUA_VERSION, is found from the interpreter, and
@@ -92,8 +92,8 @@
 #   the default behavior, give ':' as an action.
 #
 #
-#   AX_LUA_HEADERS([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-#   --------------------------------------------------------
+#   AX_LUA_HEADERS[([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])]
+#   ----------------------------------------------------------
 #
 #   Search for Lua headers. Requires that AX_PROG_LUA be expanded before this
 #   macro. Adds precious variable LUA_INCLUDE, which may contain Lua specific
@@ -130,8 +130,8 @@
 #   behavior, set the action to ':'.
 #
 #
-#   AX_LUA_LIBS([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-#   -----------------------------------------------------
+#   AX_LUA_LIBS[([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])]
+#   -------------------------------------------------------
 #
 #   Search for Lua libraries. Requires that AX_PROG_LUA be expanded before
 #   this macro. Adds precious variable LUA_LIB, which may contain Lua specific
@@ -155,8 +155,8 @@
 #   behavior, set the action to ':'.
 #
 #
-#   AX_LUA_READLINE([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-#   ---------------------------------------------------------
+#   AX_LUA_READLINE[([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])]
+#   -----------------------------------------------------------
 #
 #   Search for readline headers and libraries. Requires the AX_LIB_READLINE
 #   macro, which is provided by ax_lib_readline.m4 from the Autoconf Archive.
@@ -166,10 +166,10 @@
 #
 #
 # LICENSE
-# 
+#
 #   Copyright (C) 2013 Tim Perkins <tprk77@gmail.com>
 #   Copyright (C) 2013 Reuben Thomas <rrt@sc3d.org>
-# 
+#
 #   This program is free software: you can redistribute it and/or modify it
 #   under the terms of the GNU General Public License as published by the
 #   Free Software Foundation, either version 3 of the License, or (at your
@@ -197,13 +197,13 @@
 #   exception to the GPL to apply to your modified version as well.
 #
 # THANKS
-# 
+#
 #   This file was inspired by Andrew Dalke's and James Henstridge's python.m4
 #   and Tom Payne's, Matthieu Moy's, and Reuben Thomas's ax_lua.m4 (serial
-#   17). Basically, this file is a mashup of those two files. I like to think
-#   it combines the best of the two!
+#   17). Basically, this file is a mash-up of those two files. I like to
+#   think it combines the best of the two!
 
-#serial 18
+#serial 19
 
 
 dnl =========================================================================
@@ -212,10 +212,6 @@ dnl             [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
 dnl =========================================================================
 AC_DEFUN([AX_PROG_LUA],
 [
-  dnl Does the work of AX_PROG_LUA. This macro is used so that
-  dnl requisites work as expected. This macro is an implementation detail,
-  dnl and should not be used directly.
-
   dnl Make LUA a precious variable.
   AC_ARG_VAR([LUA], [The Lua interpreter, e.g. /usr/bin/lua5.1])
 
@@ -230,7 +226,7 @@ AC_DEFUN([AX_PROG_LUA],
     ax_display_LUA='lua'
 
     dnl At least check if this is a Lua interpreter.
-    AC_MSG_CHECKING([if $LUA is a Lua interprester])
+    AC_MSG_CHECKING([if $LUA is a Lua interpreter])
     _AX_LUA_CHK_IS_INTRP([$LUA],
       [AC_MSG_RESULT([yes])],
       [ AC_MSG_RESULT([no])
@@ -240,7 +236,7 @@ AC_DEFUN([AX_PROG_LUA],
   [ dnl A version check is needed.
     AS_IF([test "x$LUA" != 'x'],
     [ dnl Check if this is a Lua interpreter.
-      AC_MSG_CHECKING([if $LUA is a Lua interprester])
+      AC_MSG_CHECKING([if $LUA is a Lua interpreter])
       _AX_LUA_CHK_IS_INTRP([$LUA],
         [AC_MSG_RESULT([yes])],
         [ AC_MSG_RESULT([no])
@@ -345,7 +341,7 @@ AC_DEFUN([AX_PROG_LUA],
 
         dnl Initialize to the default path.
         ax_cv_lua_luaexecdir="$LUA_EXEC_PREFIX/lib/lua/$LUA_VERSION"
-        
+
         dnl Try to find a path with the prefix.
         _AX_LUA_FND_PRFX_PTH([$LUA],
           [$ax_lua_exec_prefix], [package.cpathd])
@@ -377,6 +373,7 @@ dnl _AX_LUA_CHK_IS_INTRP(PROG, [ACTION-IF-TRUE], [ACTION-IF-FALSE])
 dnl =========================================================================
 AC_DEFUN([_AX_LUA_CHK_IS_INTRP],
 [
+  dnl Just print _VERSION because all Lua interpreters have this global.
   AS_IF([$1 -e "print('Hello ' .. _VERSION .. '!')" &>/dev/null],
     [$2], [$3])
 ])
@@ -596,7 +593,7 @@ AC_DEFUN([AX_LUA_LIBS],
     AS_IF([test "x$ac_cv_search_dlopen" != 'xno' &&
            test "x$ac_cv_search_dlopen" != 'xnone required'],
       [_ax_lua_extra_libs="$_ax_lua_extra_libs $ac_cv_search_dlopen"])
-    
+
     dnl Try to find the Lua libs.
     _ax_lua_saved_libs=$LIBS
     LIBS="$LIBS $LUA_LIB"
@@ -630,4 +627,3 @@ AC_DEFUN([AX_LUA_READLINE],
     ],
     [$2])
 ])
-
